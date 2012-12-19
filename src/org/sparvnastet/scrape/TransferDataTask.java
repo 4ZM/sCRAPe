@@ -1,37 +1,42 @@
 /**
-* Copyright (c) 2011 Anders Sundman <anders@4zm.org>
-*
-* This file is part of sCRAPe.
-*
-* sCRAPe is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
+ * Copyright (c) 2011 Anders Sundman <anders@4zm.org>
+ *
+ * This file is part of sCRAPe.
+ *
+ * sCRAPe is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
 
-* sCRAPe is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
+ * sCRAPe is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
 
-* You should have received a copy of the GNU General Public License
-* along with sCRAPe. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * You should have received a copy of the GNU General Public License
+ * along with sCRAPe. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package org.sparvnastet.scrape;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 
 import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.widget.Toast;
 
-class TransferDataTask extends AsyncTask<String, Integer, byte[]> {
+class TransferDataTask extends AsyncTask<String, Integer, ArrayList<byte[]>> {
 
+    private final int MAX_SNIP_SIZE = 512;
+    private final int BUF_SIZE = 4096;
     private ProgressDialog mProgressDialog;
     private ScrapeActivity mActivity;
-    private byte[] mBuf = new byte[4096];
+    private byte[] mBuf = new byte[BUF_SIZE];
+    private String mSearchPattern;
+    private ArrayList<byte[]> mSearchMatches = new ArrayList<byte[]>();
 
     public static final int SNIP_SIZE = 1024;
 
@@ -52,25 +57,22 @@ class TransferDataTask extends AsyncTask<String, Integer, byte[]> {
         mProgressDialog.setCancelable(false);
     }
 
-    // Input, Output, MBs
+    // Input, Output, MBs, search
     @Override
-    protected byte[] doInBackground(String... params) {
-        if (params.length != 3)
-            return new byte[0];
+    protected ArrayList<byte[]> doInBackground(String... params) {
+        if (params.length != 4)
+            return null;
 
         mInFile = new File(params[0]);
         mLootFile = new File(params[1]);
         mMBs = Integer.parseInt(params[2]);
-        long transfered = transfer(mInFile, mLootFile, mMBs);
-        int snipSize = (int) Math.min(transfered, 1024);
+        mSearchPattern = params[3];
+        long transfered = transfer(mInFile, mLootFile, mMBs, mSearchPattern);
 
         if (transfered < 0)
             return null;
 
-        byte[] snip = new byte[snipSize];
-        if (snipSize > 0)
-            System.arraycopy(mBuf, 0, snip, 0, snipSize);
-        return snip;
+        return mSearchMatches;
     }
 
     @Override
@@ -78,32 +80,35 @@ class TransferDataTask extends AsyncTask<String, Integer, byte[]> {
 
         if (!mProgressDialog.isShowing())
             mProgressDialog.show();
-        
+
         mProgressDialog.setProgress(progress[0]);
-        // Log.i(ScrapeActivity.LOGTAG, "TestKeysTask: progress update " +
-        // progress[0]);
     }
 
     @Override
-    protected void onPostExecute(byte[] snip) {
-        // Log.i(SLURPActivity.LOGTAG, "ReadTagTask: onPostExecute");
-
+    protected void onPostExecute(ArrayList<byte[]> searchMatches) {
         if (mProgressDialog.isShowing()) {
             mActivity.setProgressBarIndeterminateVisibility(false);
             mProgressDialog.dismiss();
         }
 
-        if (snip == null) {
+        if (searchMatches == null) {
             Toast.makeText(mActivity, "Couldn't read data", Toast.LENGTH_SHORT).show();
-        } else if (snip.length == 0) {
+        } else if (searchMatches.size() == 0) {
             Toast.makeText(mActivity, "No data in file", Toast.LENGTH_SHORT).show();
+        } else if (searchMatches.size() == 1) {
+            if (!mSearchPattern.isEmpty())
+                Toast.makeText(mActivity, "Search string not found", Toast.LENGTH_SHORT).show();
+            mActivity.setSnipData(mSearchMatches.get(0));
         } else {
             Toast.makeText(mActivity, "Data written to:\n" + mLootFile.getAbsolutePath(), Toast.LENGTH_SHORT).show();
-            mActivity.setSnipData(snip);
+            mSearchMatches.remove(0); // Delete the snip data
+            mActivity.setSearchData(mSearchMatches);
         }
-   }
+    }
 
-    private long transfer(File in, File out, int maxMBs) {
+    private long transfer(File in, File out, int maxMBs, String searchPatern) {
+
+        final int SEARCH_PADDING = 64;
 
         FileOutputStream fos = null;
         FileInputStream fis = null;
@@ -117,8 +122,37 @@ class TransferDataTask extends AsyncTask<String, Integer, byte[]> {
                 fis = new FileInputStream(in);
 
                 int read = fis.read(mBuf, 0, mBuf.length);
+
+                if (read >= 0) {
+                    int snipSize = Math.min(read, MAX_SNIP_SIZE);
+                    byte[] snip = new byte[snipSize];
+                    System.arraycopy(mBuf, 0, snip, 0, snipSize);
+                    mSearchMatches.add(snip);
+                }
+
                 while (read > 0 && transferedBytes < maxBytesToTransfer) {
-                    
+
+                    // TODO: Impl. proper search - this won't work on buffer
+                    // boundary
+                    if (!searchPatern.isEmpty()) {
+                        String str = new String(mBuf, "ISO-8859-1");
+
+                        int start = 0;
+                        while (start != -1) {
+                            int matchIndex = str.indexOf(searchPatern, start);
+                            start = matchIndex;
+                            if (matchIndex != -1) {
+                                int paddedFirst = Math.max(0, (matchIndex - SEARCH_PADDING));
+                                int paddedLast = Math
+                                        .min(read - 1, matchIndex + searchPatern.length() + SEARCH_PADDING);
+                                byte[] match = new byte[paddedLast - paddedFirst + 1];
+                                System.arraycopy(mBuf, paddedFirst, match, 0, paddedLast - paddedFirst + 1);
+                                mSearchMatches.add(match);
+                                start += searchPatern.length();
+                            }
+                        }
+                    }
+
                     // Don't send progress on first iteration
                     if (transferedBytes >= mBuf.length)
                         publishProgress((int) (100 * (transferedBytes + 1) / maxBytesToTransfer));
@@ -142,5 +176,4 @@ class TransferDataTask extends AsyncTask<String, Integer, byte[]> {
 
         return transferedBytes;
     }
-
 }

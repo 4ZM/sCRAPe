@@ -1,21 +1,21 @@
 /**
-* Copyright (c) 2011 Anders Sundman <anders@4zm.org>
-*
-* This file is part of sCRAPe.
-*
-* sCRAPe is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
+ * Copyright (c) 2011 Anders Sundman <anders@4zm.org>
+ *
+ * This file is part of sCRAPe.
+ *
+ * sCRAPe is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
 
-* sCRAPe is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
+ * sCRAPe is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
 
-* You should have received a copy of the GNU General Public License
-* along with sCRAPe. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * You should have received a copy of the GNU General Public License
+ * along with sCRAPe. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 package org.sparvnastet.scrape;
 
@@ -46,6 +46,7 @@ public class ScrapeActivity extends Activity {
     private Button mScrapeBtn;
     private TextView mText;
     private EditText mMaxSize;
+    private EditText mSearch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +55,7 @@ public class ScrapeActivity extends Activity {
         setContentView(R.layout.activity_scrape);
         Log.i("sCRAPe", "enter onCreate");
 
-        // TextView t = (TextView) findViewById(R.id.txt);
+        mSearch = (EditText) findViewById(R.id.search_edit);
         mSpinner = (Spinner) findViewById(R.id.file_spinner);
         mScrapeBtn = (Button) findViewById(R.id.scrape_btn);
         mText = (TextView) findViewById(R.id.txt);
@@ -100,7 +101,7 @@ public class ScrapeActivity extends Activity {
     public void scrapeClicked(View view) {
 
         long megs = Integer.parseInt(mMaxSize.getText().toString());
-        
+
         if (megs < 1 || megs > 4096) {
             mText.setText("");
             Toast.makeText(this, "Max file size must be in [1,4096] MB range.", Toast.LENGTH_SHORT).show();
@@ -115,21 +116,34 @@ public class ScrapeActivity extends Activity {
         File lootFile = new File(dir, "loot.dat");
 
         mText.setText("");
-        
+
         TransferDataTask tdt = new TransferDataTask(this);
-        tdt.execute(inFile.getAbsolutePath(), lootFile.getAbsolutePath(), mMaxSize.getText().toString());
-      }
+        tdt.execute(inFile.getAbsolutePath(), lootFile.getAbsolutePath(), mMaxSize.getText().toString(), mSearch
+                .getText().toString());
+    }
 
     public void setSnipData(byte[] data) {
-        if (data.length > 0) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(bytesToHexAndASCII(data, data.length));
-            if (data.length == TransferDataTask.SNIP_SIZE)
-                sb.append("... [snip] ...");
-            mText.setText(sb);
-        }
+        StringBuilder sb = new StringBuilder();
+        sb.append(bytesToHexAndASCII(data, data.length));
+        if (data.length == TransferDataTask.SNIP_SIZE)
+            sb.append("... [snip] ...");
+
+        mText.setText(sb);
     }
-    
+
+    public void setSearchData(ArrayList<byte[]> matches) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < matches.size(); i++) {
+            sb.append("MATCH #" + i + "\n");
+            sb.append("================================================\n");
+            sb.append(bytesToHexAndASCII(matches.get(i), matches.get(i).length));
+            sb.append("================================================\n\n");
+        }
+
+        mText.setText(sb);
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.

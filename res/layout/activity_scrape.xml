@@ -30,9 +30,22 @@ along with sCRAPe. If not, see <http://www.gnu.org/licenses/>.
 
         <Spinner
             android:id="@+id/file_spinner"
-            android:layout_width="0dp"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <EditText
+            android:id="@+id/search_edit"
+            android:layout_width="0dip"
             android:layout_height="fill_parent"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:inputType="text"
+            android:text="@string/search_default" />
 
         <EditText
             android:id="@+id/max_size_edit"
@@ -69,7 +82,6 @@ along with sCRAPe. If not, see <http://www.gnu.org/licenses/>.
                 android:textSize="12sp"
                 android:typeface="monospace" />
         </LinearLayout>
-
     </ScrollView>
 
 </LinearLayout>
