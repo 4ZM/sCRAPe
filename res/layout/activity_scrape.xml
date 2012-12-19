@@ -1,0 +1,75 @@
+<!--
+Copyright (c) 2011 Anders Sundman <anders@4zm.org>
+
+This file is part of sCRAPe.
+
+sCRAPe is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+sCRAPe is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with sCRAPe. If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <Spinner
+            android:id="@+id/file_spinner"
+            android:layout_width="0dp"
+            android:layout_height="fill_parent"
+            android:layout_weight="1" />
+
+        <EditText
+            android:id="@+id/max_size_edit"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:ems="3"
+            android:inputType="number"
+            android:text="@string/scrape_default_mb" />
+
+        <Button
+            android:id="@+id/scrape_btn"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:onClick="scrapeClicked"
+            android:text="@string/scrape_btn" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/scrollView1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/txt"
+                android:layout_width="0dip"
+                android:layout_height="fill_parent"
+                android:layout_weight="1"
+                android:minLines="3"
+                android:textSize="12sp"
+                android:typeface="monospace" />
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

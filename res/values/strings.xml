@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">sCRAPe</string>
+    <string name="scrape_btn">Scrape</string>
+    <string name="menu_settings">Settings</string>
+    <string name="scrape_default_mb">10</string>
+
+</resources>

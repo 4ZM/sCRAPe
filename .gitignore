@@ -1,0 +1,9 @@
+# Eclipse files
+
+.project
+.classpath
+.settings
+default.properties
+project.properties
+bin
+gen
